@@ -7,14 +7,14 @@ from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = "9287901758:AAERevqDX5Q5FTXVK-qUfjMc8ZHnd0pl7Lo"
+BOT_TOKEN = "ВСТАВЬ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON (ИЗМЕНЕНО НА 21188) ---
-RCON_HOST = "5.188.118.29"
+RCON_HOST = "LeafSmp.minerent.io"
 RCON_PORT = 21188
-RCON_PASS = "ТВОЙ_НОВЫЙ_ПАРОЛЬ"
+RCON_PASS = "mimimimi"
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
@@ -39,7 +39,8 @@ def _sync_rcon(command: str):
             resp = client.run(command)
             return True, resp
     except Exception as e:
-        return False, str(e)
+        details = str(e).strip() or 'без дополнительного описания'
+        return False, f'{type(e).__name__}: {details}'
 
 async def rcon_exec(command: str):
     return _sync_rcon(command)
