@@ -6,17 +6,16 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
-# --- НАСТРОЙКИ (ОБНОВИ ТОКЕН И ПАРОЛЬ!) ---
-BOT_TOKEN = "ТВОЙ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"
+# --- НАСТРОЙКИ ---
+BOT_TOKEN = "9287901758:AAERevqDX5Q5FTXVK-qUfjMc8ZHnd0pl7Lo"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170            # Внешний порт из панели MineRent
-RCON_PASS = "LeafSmp_Super_2026!" # Новый пароль (должен совпадать с server.properties)
+RCON_PORT = 21170            
+RCON_PASS = "moloko"    
 
-# --- СОСТОЯНИЯ ---
 class UserStates(StatesGroup):
     waiting_for_nick = State()
     waiting_for_2fa_code = State()
