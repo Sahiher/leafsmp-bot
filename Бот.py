@@ -7,14 +7,15 @@ from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
 # --- НАСТРОЙКИ ---
+# ВСТАВЬ СЮДА НОВЫЙ ТОКЕН ОТ BOTFATHER!
 BOT_TOKEN = "9287901758:AAHmUjTk2eQpVysC5RSbBO_KhgwvroWSnz4"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
-# --- RCON MineRent: внешний порт, назначенный в панели ---
-RCON_HOST = "LeafSmp.minerent.io"
-RCON_PORT = 21188
-RCON_PASS = "mimimimi"
+# --- НАСТРОЙКИ RCON ---
+RCON_HOST = "5.188.118.29"   # Лучше использовать IP, а не домен
+RCON_PORT = 21188            
+RCON_PASS = "mimimimi"       # Убедись, что пароль совпадает с server.properties
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
@@ -34,7 +35,6 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 def _sync_rcon(command: str):
-    """Открывает RCON-соединение, выполняет одну команду и закрывает соединение."""
     try:
         with Client(
             RCON_HOST,
@@ -48,10 +48,7 @@ def _sync_rcon(command: str):
         details = str(error).strip() or "сервер не вернул описание ошибки"
         return False, f"{type(error).__name__}: {details}"
 
-
 async def rcon_exec(command: str):
-    # Библиотека rcon.source синхронная. Запускаем её в отдельном потоке,
-    # чтобы подключение к Minecraft не блокировало Telegram-бота.
     return await asyncio.to_thread(_sync_rcon, command)
 
 def main_dashboard(user_id):
