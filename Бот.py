@@ -86,30 +86,18 @@ def admin_donate_menu():
 async def process_link_code(message: types.Message, raw_code: str):
     code = raw_code.strip()
     if not code.isdigit() or len(code) != 6:
-        await message.answer("❌ Код должен состоять ровно из 6 цифр!\nПример: `/2fa 123456`", parse_mode="Markdown")
+        await message.answer("❌ Код должен состоять ровно из 6 цифр!\nПример: /2fa 123456")
         return
 
     cmd = f"leaflogin linktg {code} {message.from_user.id}"
     ok, resp = await rcon_exec(cmd)
 
     if ok and "SUCCESS" in resp:
-        await message.answer(
-            "✅ **2FA успешно привязана к вашему аккаунту!**",
-            parse_mode="Markdown",
-            reply_markup=main_dashboard(message.from_user.id)
-        )
+        await message.answer("✅ **2FA успешно привязана к вашему аккаунту!**", reply_markup=main_dashboard(message.from_user.id))
     elif ok and "CODE_NOT_FOUND" in resp:
-        await message.answer(
-            "❌ **Код не найден или устарел!**\nЗайдите на сервер и введите `/2fa` заново.",
-            parse_mode="Markdown",
-            reply_markup=main_dashboard(message.from_user.id)
-        )
+        await message.answer("❌ Код не найден или устарел!\nЗайдите на сервер и введите /2fa заново.", reply_markup=main_dashboard(message.from_user.id))
     else:
-        await message.answer(
-            f"❌ Ошибка RCON:\n`{resp}`",
-            parse_mode="Markdown",
-            reply_markup=main_dashboard(message.from_user.id)
-        )
+        await message.answer(f"❌ Ошибка RCON:\n{resp}", reply_markup=main_dashboard(message.from_user.id))
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
@@ -131,7 +119,7 @@ async def cmd_2fa(message: types.Message, state: FSMContext):
     await state.clear()
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
-        await message.answer("❌ Укажите 6-значный код из игры:\n`/2fa 123456`", parse_mode="Markdown")
+        await message.answer("❌ Укажите 6-значный код из игры:\n/2fa 123456")
         return
     await process_link_code(message, parts[1])
 
@@ -143,9 +131,9 @@ async def show_ip(message: types.Message):
 async def guide_2fa(message: types.Message):
     text = (
         "📖 **Гайд по привязке Telegram 2FA:**\n\n"
-        "1. Напишите в чат игры: `/2fa`\n"
+        "1. Напишите в чат игры: /2fa\n"
         "2. Получите 6-значный код.\n"
-        "3. Отправьте его сюда: `/2fa 123456`"
+        "3. Отправьте его сюда: /2fa 123456"
     )
     await message.answer(text, parse_mode="Markdown")
 
@@ -217,7 +205,7 @@ async def handle_2fa_allow(callback: types.CallbackQuery):
     if ok and "SUCCESS" in resp:
         await callback.message.edit_text(f"✅ Вход для **{nick}** подтверждён!", parse_mode="Markdown")
     else:
-        await callback.message.edit_text(f"❌ Ошибка:\n`{resp}`", parse_mode="Markdown")
+        await callback.message.edit_text(f"❌ Ошибка:\n{resp}")
 
 @dp.callback_query(F.data.startswith("2fa_deny_"))
 async def handle_2fa_deny(callback: types.CallbackQuery):
@@ -228,7 +216,7 @@ async def handle_2fa_deny(callback: types.CallbackQuery):
     if ok and "SUCCESS" in resp:
         await callback.message.edit_text(f"⛔ Вход для **{nick}** отклонён!", parse_mode="Markdown")
     else:
-        await callback.message.edit_text(f"❌ Ошибка:\n`{resp}`", parse_mode="Markdown")
+        await callback.message.edit_text(f"❌ Ошибка:\n{resp}")
 
 @dp.message(F.text == "⚙️ Админ-панель")
 async def show_admin_panel(message: types.Message):
@@ -244,10 +232,17 @@ async def admin_test_rcon(callback: types.CallbackQuery):
     await callback.message.answer("⏳ Проверяю соединение с RCON...")
     ok, resp = await rcon_exec("list")
     
+    # Отправляем ошибку/успех БЕЗ Markdown, чтобы избежать падений
     if ok:
-        await callback.message.answer(f"✅ **Успех!** Связь есть.\nОтвет сервера:\n`{resp}`", parse_mode="Markdown")
+        try:
+            await callback.message.answer(f"✅ Успех! Связь есть.\nОтвет сервера: {resp}")
+        except Exception:
+            pass
     else:
-        await callback.message.answer(f"❌ **Ошибка!**\nБот не может подключиться к RCON.\nПричина:\n`{resp}`\n\nПроверь порт (21170) и пароль (moloko).", parse_mode="Markdown")
+        try:
+            await callback.message.answer(f"❌ Ошибка!\nБот не может подключиться к RCON.\nПричина: {resp}\n\nПроверь порт (21170) и пароль (moloko).")
+        except Exception:
+            pass
     await callback.answer()
 
 @dp.callback_query(F.data == "admin_give")
@@ -277,7 +272,7 @@ async def admin_give_final(callback: types.CallbackQuery, state: FSMContext):
     if success:
         await callback.message.answer(f"✅ Донат **{group_name}** выдан **{target_nick}**!\nОтвет: `{resp}`", parse_mode="Markdown")
     else:
-        await callback.message.answer(f"❌ Ошибка при выдаче:\n`{resp}`\n\nПроверь RCON.", parse_mode="Markdown")
+        await callback.message.answer(f"❌ Ошибка при выдаче:\n{resp}\n\nПроверь RCON.")
     await state.clear()
     await callback.answer()
 
@@ -292,7 +287,7 @@ async def admin_2fareset_start(callback: types.CallbackQuery, state: FSMContext)
 async def admin_2fareset_final(message: types.Message, state: FSMContext):
     nick = message.text.strip()
     ok, resp = await rcon_exec(f"leaflogin 2fareset {nick}")
-    await message.answer(f"Результат сброса 2FA:\n`{resp}`", parse_mode="Markdown")
+    await message.answer(f"Результат сброса 2FA:\n{resp}")
     await state.clear()
 
 @dp.callback_query(F.data == "admin_unreg")
@@ -306,7 +301,7 @@ async def admin_unreg_start(callback: types.CallbackQuery, state: FSMContext):
 async def admin_unreg_final(message: types.Message, state: FSMContext):
     nick = message.text.strip()
     ok, resp = await rcon_exec(f"leaflogin unreg {nick}")
-    await message.answer(f"Результат:\n`{resp}`", parse_mode="Markdown")
+    await message.answer(f"Результат:\n{resp}")
     await state.clear()
 
 @dp.callback_query(F.data == "admin_editpass")
@@ -328,7 +323,7 @@ async def admin_editpass_final(message: types.Message, state: FSMContext):
     nick = data['edit_nick']
     new_pass = message.text.strip()
     ok, resp = await rcon_exec(f"leaflogin editpass {nick} {new_pass}")
-    await message.answer(f"Результат для **{nick}**:\n`{resp}`", parse_mode="Markdown")
+    await message.answer(f"Результат для **{nick}**:\n{resp}")
     await state.clear()
 
 @dp.callback_query(F.data == "admin_regacc")
@@ -350,7 +345,7 @@ async def admin_regacc_final(message: types.Message, state: FSMContext):
     nick = data['reg_nick']
     passw = message.text.strip()
     ok, resp = await rcon_exec(f"leaflogin regacc {nick} {passw}")
-    await message.answer(f"Результат регистрации **{nick}**:\n`{resp}`", parse_mode="Markdown")
+    await message.answer(f"Результат регистрации **{nick}**:\n{resp}")
     await state.clear()
 
 @dp.message(F.text & ~F.text.startswith('/'))
