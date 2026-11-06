@@ -16,7 +16,6 @@ RCON_HOST = "5.188.118.29"
 RCON_PORT = 21170            
 RCON_PASS = "moloko"    
 
-# --- СОСТОЯНИЯ ---
 class UserStates(StatesGroup):
     waiting_for_nick = State()
     waiting_for_2fa_code = State()
@@ -232,7 +231,6 @@ async def admin_test_rcon(callback: types.CallbackQuery):
     await callback.message.answer("⏳ Проверяю соединение с RCON...")
     ok, resp = await rcon_exec("list")
     
-    # Отправляем ошибку/успех БЕЗ Markdown, чтобы избежать падений
     if ok:
         try:
             await callback.message.answer(f"✅ Успех! Связь есть.\nОтвет сервера: {resp}")
