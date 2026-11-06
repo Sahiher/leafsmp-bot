@@ -13,7 +13,7 @@ SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170  # Новый порт из панели          # Внешний порт из панели MineRent (тип RCON)
+RCON_PORT = 21170            # Внешний порт из панели MineRent
 RCON_PASS = "moloko"    
 
 # --- СОСТОЯНИЯ ---
@@ -51,7 +51,8 @@ def _sync_rcon(command: str):
                 pass
 
 async def rcon_exec(command: str):
-    return await asyncio.to_thread(_sync_rcon, command)
+    # Вызываем напрямую, без asyncio.to_thread, чтобы не было ошибки signal
+    return _sync_rcon(command)
 
 def main_dashboard(user_id):
     kb = ReplyKeyboardBuilder()
@@ -255,7 +256,7 @@ async def admin_test_rcon(callback: types.CallbackQuery):
     if ok:
         await callback.message.answer(f"✅ **Успех!** Связь есть.\nОтвет сервера:\n`{resp}`", parse_mode="Markdown")
     else:
-        await callback.message.answer(f"❌ **Ошибка!**\nБот не может подключиться к RCON.\nПричина:\n`{resp}`\n\nПроверь порт (21127) и пароль (moloko).", parse_mode="Markdown")
+        await callback.message.answer(f"❌ **Ошибка!**\nБот не может подключиться к RCON.\nПричина:\n`{resp}`\n\nПроверь порт (21170) и пароль (moloko).", parse_mode="Markdown")
     await callback.answer()
 
 @dp.callback_query(F.data == "admin_give")
@@ -277,7 +278,6 @@ async def admin_give_final(callback: types.CallbackQuery, state: FSMContext):
     target_nick = data.get('target_nick')
     item = callback.data.split("_")[1]
     
-    # ВАЖНО: Названия групп в LuckPerms
     group_name = {"leshiy": "леший", "shmel": "шмель", "varden": "варден"}[item]
 
     command = f"lp user {target_nick} parent add {group_name}"
