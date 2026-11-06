@@ -12,9 +12,9 @@ ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON (ИЗМЕНЕНО НА 21188) ---
-RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21188            
-RCON_PASS = "LeafSmp_Super_2026!" 
+RCON_HOST = "5.188.118.29"
+RCON_PORT = 21188
+RCON_PASS = "НОВЫЙ_ПАРОЛЬ"
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
