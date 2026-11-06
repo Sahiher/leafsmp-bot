@@ -13,7 +13,7 @@ SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170            # Внешний порт из панели MineRent
+RCON_PORT = 21170            
 RCON_PASS = "moloko"    
 
 # --- СОСТОЯНИЯ ---
@@ -36,14 +36,13 @@ dp = Dispatcher()
 
 def _sync_rcon(command: str):
     try:
-        with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS) as client:
+        with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5) as client:
             resp = client.run(command)
             return True, resp
     except Exception as e:
         return False, str(e)
 
 async def rcon_exec(command: str):
-    # Вызываем напрямую, без asyncio.to_thread, чтобы не было ошибки signal
     return _sync_rcon(command)
 
 def main_dashboard(user_id):
