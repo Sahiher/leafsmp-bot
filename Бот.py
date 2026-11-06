@@ -4,7 +4,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from mcrcon import MCRcon
+from rcon.source import Client
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = "9287901758:AAHKrPNNTwUyYfwayRrF8of2xyKwoheIaEA"
@@ -35,20 +35,12 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 def _sync_rcon(command: str):
-    mcr = None
     try:
-        mcr = MCRcon(RCON_HOST, RCON_PASS, port=RCON_PORT, timeout=5)
-        mcr.connect()
-        resp = mcr.command(command)
-        return True, resp
+        with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS) as client:
+            resp = client.run(command)
+            return True, resp
     except Exception as e:
         return False, str(e)
-    finally:
-        if mcr:
-            try:
-                mcr.disconnect()
-            except:
-                pass
 
 async def rcon_exec(command: str):
     # Вызываем напрямую, без asyncio.to_thread, чтобы не было ошибки signal
