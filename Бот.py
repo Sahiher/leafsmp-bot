@@ -11,10 +11,10 @@ BOT_TOKEN = "9287901758:AAERevqDX5Q5FTXVK-qUfjMc8ZHnd0pl7Lo"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
-# --- НАСТРОЙКИ RCON ---
+# --- НАСТРОЙКИ RCON (ИЗМЕНЕНО НА 21188) ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170            # Должен совпадать с rcon.port в конфиге
-RCON_PASS = "LeafSmp_Super_2026!" # Должен совпадать с rcon.password
+RCON_PORT = 21188            
+RCON_PASS = "LeafSmp_Super_2026!" 
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
@@ -238,7 +238,7 @@ async def admin_test_rcon(callback: types.CallbackQuery):
             pass
     else:
         try:
-            await callback.message.answer(f"❌ Ошибка!\nБот не может подключиться к RCON.\nПричина: {resp}\n\nПроверь порт (21170) и пароль.")
+            await callback.message.answer(f"❌ Ошибка!\nБот не может подключиться к RCON.\nПричина: {resp}\n\nПроверь порт (21188) и пароль.")
         except Exception:
             pass
     await callback.answer()
