@@ -6,16 +6,17 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
-# --- НАСТРОЙКИ ---
-BOT_TOKEN = "9287901758:AAHKrPNNTwUyYfwayRrF8of2xyKwoheIaEA"
+# --- НАСТРОЙКИ (ОБНОВИ ТОКЕН И ПАРОЛЬ!) ---
+BOT_TOKEN = "ТВОЙ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170            
-RCON_PASS = "moloko"    
+RCON_PORT = 21170            # Внешний порт из панели MineRent
+RCON_PASS = "LeafSmp_Super_2026!" # Новый пароль (должен совпадать с server.properties)
 
+# --- СОСТОЯНИЯ ---
 class UserStates(StatesGroup):
     waiting_for_nick = State()
     waiting_for_2fa_code = State()
@@ -238,7 +239,7 @@ async def admin_test_rcon(callback: types.CallbackQuery):
             pass
     else:
         try:
-            await callback.message.answer(f"❌ Ошибка!\nБот не может подключиться к RCON.\nПричина: {resp}\n\nПроверь порт (21170) и пароль (moloko).")
+            await callback.message.answer(f"❌ Ошибка!\nБот не может подключиться к RCON.\nПричина: {resp}\n\nПроверь порт (21170) и пароль.")
         except Exception:
             pass
     await callback.answer()
