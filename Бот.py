@@ -11,7 +11,7 @@ BOT_TOKEN = "ВСТАВЬ_НОВЫЙ_ТОКЕН_ОТ_BOTFATHER"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
-# --- НАСТРОЙКИ RCON (ИЗМЕНЕНО НА 21188) ---
+# --- RCON MineRent: внешний порт, назначенный в панели ---
 RCON_HOST = "LeafSmp.minerent.io"
 RCON_PORT = 21188
 RCON_PASS = "mimimimi"
@@ -34,16 +34,25 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 def _sync_rcon(command: str):
+    """Открывает RCON-соединение, выполняет одну команду и закрывает соединение."""
     try:
-        with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5) as client:
-            resp = client.run(command)
-            return True, resp
-    except Exception as e:
-        details = str(e).strip() or 'без дополнительного описания'
-        return False, f'{type(e).__name__}: {details}'
+        with Client(
+            RCON_HOST,
+            RCON_PORT,
+            passwd=RCON_PASS,
+            timeout=8
+        ) as client:
+            response = client.run(command)
+            return True, str(response).strip()
+    except Exception as error:
+        details = str(error).strip() or "сервер не вернул описание ошибки"
+        return False, f"{type(error).__name__}: {details}"
+
 
 async def rcon_exec(command: str):
-    return _sync_rcon(command)
+    # Библиотека rcon.source синхронная. Запускаем её в отдельном потоке,
+    # чтобы подключение к Minecraft не блокировало Telegram-бота.
+    return await asyncio.to_thread(_sync_rcon, command)
 
 def main_dashboard(user_id):
     kb = ReplyKeyboardBuilder()
