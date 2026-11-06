@@ -13,8 +13,8 @@ SERVER_IP = "LeafSmp.minerent.io"
 
 # --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
-RCON_PORT = 21170            
-RCON_PASS = "moloko"    
+RCON_PORT = 21170            # Должен совпадать с rcon.port в конфиге
+RCON_PASS = "LeafSmp_Super_2026!" # Должен совпадать с rcon.password
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
