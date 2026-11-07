@@ -7,7 +7,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
-# --- НАСТРОЙКИ ---
 BOT_TOKEN = "9287901758:AAERevqDX5Q5FTXVK-qUfjMc8ZHnd0pl7Lo"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
@@ -16,7 +15,6 @@ RCON_HOST = "5.188.118.29"
 RCON_PORT = 21188            
 RCON_PASS = "LeafSmp_Super_2026!" 
 
-# --- СОСТОЯНИЯ ---
 class UserStates(StatesGroup):
     waiting_for_nick = State()
     waiting_for_2fa_code = State()
@@ -30,10 +28,10 @@ class AdminStates(StatesGroup):
     waiting_for_regacc_pass = State()
     waiting_for_editpass_nick = State()
     waiting_for_editpass_pass = State()
-    waiting_for_remove_donate_nick = State()  # Новое состояние для удаления доната
-    waiting_for_remove_donate_group = State() # Новое состояние для удаления группы
-    waiting_for_admin_group_nick = State()    # Новое состояние для выдачи админки
-    waiting_for_admin_group_type = State()    # Новое состояние для выдачи админки
+    waiting_for_remove_donate_nick = State()
+    waiting_for_remove_donate_group = State()
+    waiting_for_admin_group_nick = State()
+    waiting_for_admin_group_type = State()
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -49,12 +47,10 @@ def _sync_rcon(command: str):
 async def rcon_exec(command: str):
     return _sync_rcon(command)
 
-# Получение списка игроков онлайн
 async def get_online_players():
     ok, resp = await rcon_exec("list")
     if not ok or "There are" not in resp:
         return []
-    # Парсим ответ вида: "There are 2 of a max of 20 players online: Player1, Player2"
     match = re.search(r"online:\s*(.*)", resp)
     if match and match.group(1):
         return [name.strip() for name in match.group(1).split(",")]
@@ -117,7 +113,6 @@ def admin_groups_menu():
     kb.adjust(2)
     return kb.as_markup()
 
-# --- ОБЩИЕ ХЕНДЛЕРЫ ---
 async def process_link_code(message: types.Message, raw_code: str):
     code = raw_code.strip()
     if not code.isdigit() or len(code) != 6:
@@ -227,22 +222,19 @@ async def get_nick_for_payment(message: types.Message, state: FSMContext):
         pass
     await state.clear()
 
-@dp.callback_query(F.data.startswith("2fa_allow_"))
+@dp.callback_query(F.data.startswith("2fa_allow:"))
 async def handle_2fa_allow(callback: types.CallbackQuery):
-    parts = callback.data.split("_")
-    nick = parts[2]
-    code = parts[3]
-    cmd = f"leaflogin 2faapprove {nick} {code}"
+    nick = callback.data.split(":", 1)[1]
+    cmd = f"leaflogin 2faapprove {nick}"
     ok, resp = await rcon_exec(cmd)
     if ok and "SUCCESS" in resp:
         await callback.message.edit_text(f"✅ Вход для **{nick}** подтверждён!", parse_mode="Markdown")
     else:
-        await callback.message.edit_text(f"❌ Ошибка:\n{resp}")
+        await callback.message.edit_text(f"❌ Ошибка авторизации:\n{resp}")
 
-@dp.callback_query(F.data.startswith("2fa_deny_"))
+@dp.callback_query(F.data.startswith("2fa_deny:"))
 async def handle_2fa_deny(callback: types.CallbackQuery):
-    parts = callback.data.split("_")
-    nick = parts[2]
+    nick = callback.data.split(":", 1)[1]
     cmd = f"leaflogin 2fadeny {nick}"
     ok, resp = await rcon_exec(cmd)
     if ok and "SUCCESS" in resp:
@@ -250,7 +242,6 @@ async def handle_2fa_deny(callback: types.CallbackQuery):
     else:
         await callback.message.edit_text(f"❌ Ошибка:\n{resp}")
 
-# --- АДМИН ПАНЕЛЬ ---
 @dp.message(F.text == "⚙️ Админ-панель")
 async def show_admin_panel(message: types.Message):
     if message.from_user.id != ADMIN_ID:
@@ -268,7 +259,6 @@ async def admin_test_rcon(callback: types.CallbackQuery):
         await callback.message.answer(f"❌ Ошибка!\nПричина: {resp}")
     await callback.answer()
 
-# --- ВЫДАЧА ДОНАТА (ВЫБОР ИГРОКА) ---
 @dp.callback_query(F.data == "admin_give")
 async def admin_give_start(callback: types.CallbackQuery, state: FSMContext):
     if callback.from_user.id != ADMIN_ID: return
@@ -316,7 +306,6 @@ async def admin_give_final(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer()
 
-# --- УДАЛЕНИЕ ДОНАТА ---
 @dp.callback_query(F.data == "admin_remove_donate")
 async def admin_remove_start(callback: types.CallbackQuery, state: FSMContext):
     if callback.from_user.id != ADMIN_ID: return
@@ -364,7 +353,6 @@ async def admin_remove_final(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer()
 
-# --- ВЫДАЧА АДМИНСКИХ ГРУПП ---
 @dp.callback_query(F.data == "admin_give_admins")
 async def admin_admins_start(callback: types.CallbackQuery, state: FSMContext):
     if callback.from_user.id != ADMIN_ID: return
@@ -418,7 +406,6 @@ async def admin_admins_final(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer()
 
-# --- ОСТАЛЬНЫЕ АДМИН ФУНКЦИИ ---
 @dp.callback_query(F.data == "admin_2fareset")
 async def admin_2fareset_start(callback: types.CallbackQuery, state: FSMContext):
     if callback.from_user.id != ADMIN_ID: return
