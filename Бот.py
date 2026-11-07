@@ -22,6 +22,7 @@ class UserStates(StatesGroup):
 class AdminStates(StatesGroup):
     waiting_for_admin_nick = State()
     waiting_for_admin_donate = State()
+    waiting_for_unlogin_nick = State()
     waiting_for_unreg_nick = State()
     waiting_for_2fareset_nick = State()
     waiting_for_regacc_nick = State()
@@ -80,6 +81,7 @@ def admin_menu():
     kb.button(text="🎁 Выдать донат", callback_data="admin_give")
     kb.button(text="🗑 Удалить донат", callback_data="admin_remove_donate")
     kb.button(text="👑 Выдать админку", callback_data="admin_give_admins")
+    kb.button(text="🔒 Разлогинить", callback_data="admin_unlogin")
     kb.button(text="🔓 Сбросить 2FA", callback_data="admin_2fareset")
     kb.button(text="🗑 Анрегнуть игрока", callback_data="admin_unreg")
     kb.button(text="✏️ Сменить пароль", callback_data="admin_editpass")
@@ -258,6 +260,39 @@ async def admin_test_rcon(callback: types.CallbackQuery):
     else:
         await callback.message.answer(f"❌ Ошибка!\nПричина: {resp}")
     await callback.answer()
+
+@dp.callback_query(F.data == "admin_unlogin")
+async def admin_unlogin_start(callback: types.CallbackQuery, state: FSMContext):
+    if callback.from_user.id != ADMIN_ID: return
+    players = await get_online_players()
+
+    if players:
+        kb = InlineKeyboardBuilder()
+        for p in players:
+            kb.button(text=p, callback_data=f"select_unlogin_{p}")
+        kb.adjust(2)
+        await callback.message.answer("Выберите игрока для сброса сессии (или введите ник вручную):", reply_markup=kb.as_markup())
+    else:
+        await callback.message.answer("Введите ник игрока для сброса сессии:")
+
+    await state.set_state(AdminStates.waiting_for_unlogin_nick)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("select_unlogin_"))
+async def admin_unlogin_select(callback: types.CallbackQuery, state: FSMContext):
+    if callback.from_user.id != ADMIN_ID: return
+    nick = callback.data.replace("select_unlogin_", "")
+    ok, resp = await rcon_exec(f"leaflogin unlogin {nick}")
+    await callback.message.answer(f"Результат сброса сессии для **{nick}**:\n`{resp}`", parse_mode="Markdown")
+    await state.clear()
+    await callback.answer()
+
+@dp.message(AdminStates.waiting_for_unlogin_nick)
+async def admin_unlogin_final(message: types.Message, state: FSMContext):
+    nick = message.text.strip()
+    ok, resp = await rcon_exec(f"leaflogin unlogin {nick}")
+    await message.answer(f"Результат сброса сессии для **{nick}**:\n`{resp}`", parse_mode="Markdown")
+    await state.clear()
 
 @dp.callback_query(F.data == "admin_give")
 async def admin_give_start(callback: types.CallbackQuery, state: FSMContext):
