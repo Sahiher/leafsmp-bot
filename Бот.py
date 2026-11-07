@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
-BOT_TOKEN = "ВСТАВЬ_НОВЫЙ_ТОКЕН_ИЗ_BOTFATHER"
+BOT_TOKEN = "9287901758:AAHmUjTk2eQpVysC5RSbBO_KhgwvroWSnz4"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
