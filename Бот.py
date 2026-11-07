@@ -164,7 +164,7 @@ async def guide_2fa(message: types.Message):
     text = (
         "📖 **Гайд по привязке Telegram 2FA:**\n\n"
         "1. Напишите в чат игры: /2fa\n"
-        "2. Получите 6-значный код.\n"
+        "2. Нажмите на код, чтобы скопировать.\n"
         "3. Отправьте его сюда: /2fa 123456"
     )
     await message.answer(text, parse_mode="Markdown")
