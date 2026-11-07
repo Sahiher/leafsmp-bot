@@ -538,8 +538,44 @@ async def admin_reply(message: types.Message):
     else:
         await message.answer("Ответьте (Reply) на сообщение с ID.")
 
+async def rcon_poll_2fa():
+    while True:
+        try:
+            ok, resp = await rcon_exec("leaflogin poll2fa")
+            if ok and resp and resp.startswith("PENDING:"):
+                raw = resp.replace("PENDING:", "").strip()
+                items = raw.split("|")
+                for item in items:
+                    if not item:
+                        continue
+                    parts = item.split(";")
+                    if len(parts) >= 3:
+                        nick = parts[0]
+                        tg_id = int(parts[1])
+                        ip = parts[2]
+
+                        kb = InlineKeyboardBuilder()
+                        kb.button(text="✅ Подтвердить вход", callback_data=f"2fa_allow:{nick}")
+                        kb.button(text="❌ Заблокировать", callback_data=f"2fa_deny:{nick}")
+                        kb.adjust(2)
+
+                        text = (
+                            f"🚨 <b>Попытка входа на аккаунт LeafSMP!</b>\n\n"
+                            f"👤 Игрок: <b>{nick}</b>\n"
+                            f"🌐 IP-адрес: <code>{ip}</code>\n\n"
+                            f"Нажмите кнопку ниже, чтобы подтвердить вход:"
+                        )
+                        try:
+                            await bot.send_message(tg_id, text, parse_mode="HTML", reply_markup=kb.as_markup())
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        await asyncio.sleep(1.0)
+
 async def main():
     print("Бот запущен")
+    asyncio.create_task(rcon_poll_2fa())
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
