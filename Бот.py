@@ -8,7 +8,7 @@ from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = "9287901758:AAEbeT3W44TsG2YghHj4j42YrglRUf4DI6Y"
+BOT_TOKEN = "9287901758:AAGXJvZ9V-2ZAvNNtdfQlz7Ut7eXhNYnUV8"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
