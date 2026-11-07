@@ -37,16 +37,44 @@ class AdminStates(StatesGroup):
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-def _sync_rcon(command: str):
+rcon_client = None
+rcon_lock = asyncio.Lock()
+
+def get_rcon():
+    global rcon_client
+    if rcon_client is None:
+        try:
+            rcon_client = Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5)
+            rcon_client.connect()
+        except Exception:
+            rcon_client = None
+    return rcon_client
+
+def _sync_rcon_exec(command: str):
+    global rcon_client
     try:
-        with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5) as client:
-            resp = client.run(command)
-            return True, resp
-    except Exception as e:
-        return False, str(e)
+        cli = get_rcon()
+        if cli is None:
+            return False, "RCON_CONNECTION_FAILED"
+        resp = cli.run(command)
+        return True, resp
+    except Exception:
+        if rcon_client is not None:
+            try:
+                rcon_client.close()
+            except Exception:
+                pass
+            rcon_client = None
+        try:
+            with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5) as fallback:
+                resp = fallback.run(command)
+                return True, resp
+        except Exception as e:
+            return False, str(e)
 
 async def rcon_exec(command: str):
-    return _sync_rcon(command)
+    async with rcon_lock:
+        return await asyncio.to_thread(_sync_rcon_exec, command)
 
 async def get_online_players():
     ok, resp = await rcon_exec("list")
@@ -54,7 +82,7 @@ async def get_online_players():
         return []
     match = re.search(r"online:\s*(.*)", resp)
     if match and match.group(1):
-        return [name.strip() for name in match.group(1).split(",")]
+        return [name.strip() for name in match.group(1).split(",") if name.strip()]
     return []
 
 def main_dashboard(user_id):
@@ -539,7 +567,6 @@ async def admin_reply(message: types.Message):
         await message.answer("Ответьте (Reply) на сообщение с ID.")
 
 async def rcon_poll_2fa():
-    sent_nicks = set()
     while True:
         try:
             ok, resp = await rcon_exec("leaflogin poll2fa")
@@ -555,11 +582,6 @@ async def rcon_poll_2fa():
                         tg_id = int(parts[1])
                         ip = parts[2]
 
-                        if nick.lower() in sent_nicks:
-                            continue
-
-                        sent_nicks.add(nick.lower())
-
                         kb = InlineKeyboardBuilder()
                         kb.button(text="✅ Подтвердить вход", callback_data=f"2fa_allow:{nick}")
                         kb.button(text="❌ Заблокировать", callback_data=f"2fa_deny:{nick}")
@@ -573,8 +595,8 @@ async def rcon_poll_2fa():
                         )
                         try:
                             await bot.send_message(tg_id, text, parse_mode="HTML", reply_markup=kb.as_markup())
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            print(f"Error sending 2FA to {tg_id}: {e}")
         except Exception:
             pass
         await asyncio.sleep(1.0)
