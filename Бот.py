@@ -1,11 +1,12 @@
 import asyncio
 import re
+import socket
+import struct
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from rcon.source import Client
 
 BOT_TOKEN = "9287901758:AAGXJvZ9V-2ZAvNNtdfQlz7Ut7eXhNYnUV8"
 ADMIN_ID = 7669007088
@@ -34,47 +35,96 @@ class AdminStates(StatesGroup):
     waiting_for_admin_group_nick = State()
     waiting_for_admin_group_type = State()
 
+class PersistentRcon:
+    def __init__(self, host, port, password):
+        self.host = host
+        self.port = port
+        self.password = password
+        self.sock = None
+        self.req_id = 0
+
+    def _recv_exact(self, length):
+        buffer = bytearray()
+        while len(buffer) < length:
+            chunk = self.sock.recv(length - len(buffer))
+            if not chunk:
+                return None
+            buffer.extend(chunk)
+        return bytes(buffer)
+
+    def connect(self):
+        self.close()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.settimeout(6.0)
+        self.sock.connect((self.host, self.port))
+
+        self.req_id += 1
+        payload = self.password.encode("utf-8")
+        packet_len = 10 + len(payload)
+        auth_data = struct.pack("<iii", packet_len, self.req_id, 3) + payload + b"\x00\x00"
+        self.sock.sendall(auth_data)
+
+        len_data = self._recv_exact(4)
+        if not len_data:
+            raise ConnectionError("RCON: сервер закрыл соединение при авторизации")
+        resp_len = struct.unpack("<i", len_data)[0]
+
+        body_data = self._recv_exact(resp_len)
+        if not body_data or len(body_data) < 8:
+            raise ConnectionError("RCON: некорректный ответ авторизации")
+
+        resp_id, resp_type = struct.unpack("<ii", body_data[:8])
+        if resp_id == -1:
+            raise PermissionError("RCON: неверный пароль")
+
+    def run(self, command: str):
+        self.req_id += 1
+        payload = command.encode("utf-8")
+        packet_len = 10 + len(payload)
+        cmd_data = struct.pack("<iii", packet_len, self.req_id, 2) + payload + b"\x00\x00"
+        self.sock.sendall(cmd_data)
+
+        len_data = self._recv_exact(4)
+        if not len_data:
+            raise ConnectionError("RCON: разрыв связи при чтении команды")
+        resp_len = struct.unpack("<i", len_data)[0]
+
+        body_data = self._recv_exact(resp_len)
+        if not body_data or len(body_data) < 8:
+            raise ConnectionError("RCON: неполные данные пакета")
+
+        return body_data[8:-2].decode("utf-8", errors="replace")
+
+    def execute(self, command: str):
+        try:
+            if self.sock is None:
+                self.connect()
+            return True, self.run(command)
+        except Exception:
+            self.close()
+            try:
+                self.connect()
+                return True, self.run(command)
+            except Exception as ex:
+                self.close()
+                return False, str(ex)
+
+    def close(self):
+        if self.sock is not None:
+            try:
+                self.sock.close()
+            except Exception:
+                pass
+            self.sock = None
+
+rcon = PersistentRcon(RCON_HOST, RCON_PORT, RCON_PASS)
+rcon_lock = asyncio.Lock()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-rcon_client = None
-rcon_lock = asyncio.Lock()
-
-def get_rcon():
-    global rcon_client
-    if rcon_client is None:
-        try:
-            rcon_client = Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5)
-            rcon_client.connect()
-        except Exception:
-            rcon_client = None
-    return rcon_client
-
-def _sync_rcon_exec(command: str):
-    global rcon_client
-    try:
-        cli = get_rcon()
-        if cli is None:
-            return False, "RCON_CONNECTION_FAILED"
-        resp = cli.run(command)
-        return True, resp
-    except Exception:
-        if rcon_client is not None:
-            try:
-                rcon_client.close()
-            except Exception:
-                pass
-            rcon_client = None
-        try:
-            with Client(RCON_HOST, RCON_PORT, passwd=RCON_PASS, timeout=5) as fallback:
-                resp = fallback.run(command)
-                return True, resp
-        except Exception as e:
-            return False, str(e)
-
 async def rcon_exec(command: str):
     async with rcon_lock:
-        return await asyncio.to_thread(_sync_rcon_exec, command)
+        return await asyncio.to_thread(rcon.execute, command)
 
 async def get_online_players():
     ok, resp = await rcon_exec("list")
@@ -599,12 +649,15 @@ async def rcon_poll_2fa():
                             print(f"Error sending 2FA to {tg_id}: {e}")
         except Exception:
             pass
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(2.0)
 
 async def main():
     print("Бот запущен")
     asyncio.create_task(rcon_poll_2fa())
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        rcon.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
