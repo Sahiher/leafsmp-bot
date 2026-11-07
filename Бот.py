@@ -7,17 +7,19 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from rcon.source import Client
 
-BOT_TOKEN = "9287901758:AAEbeT3W44TsG2YghHj4j42YrglRUf4DI6Y	"
+# --- НАСТРОЙКИ ---
+BOT_TOKEN = "9287901758:AAEbeT3W44TsG2YghHj4j42YrglRUf4DI6Y"
 ADMIN_ID = 7669007088
 SERVER_IP = "LeafSmp.minerent.io"
 
+# --- НАСТРОЙКИ RCON ---
 RCON_HOST = "5.188.118.29"   
 RCON_PORT = 21188            
 RCON_PASS = "LeafSmp_Super_2026!" 
 
 class UserStates(StatesGroup):
     waiting_for_nick = State()
-    waiting_for_2fa_code = State()
+    waiting_for_2fa_code = State()	
 
 class AdminStates(StatesGroup):
     waiting_for_admin_nick = State()
