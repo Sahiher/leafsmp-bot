@@ -539,6 +539,7 @@ async def admin_reply(message: types.Message):
         await message.answer("Ответьте (Reply) на сообщение с ID.")
 
 async def rcon_poll_2fa():
+    sent_nicks = set()
     while True:
         try:
             ok, resp = await rcon_exec("leaflogin poll2fa")
@@ -554,6 +555,11 @@ async def rcon_poll_2fa():
                         tg_id = int(parts[1])
                         ip = parts[2]
 
+                        if nick.lower() in sent_nicks:
+                            continue
+
+                        sent_nicks.add(nick.lower())
+
                         kb = InlineKeyboardBuilder()
                         kb.button(text="✅ Подтвердить вход", callback_data=f"2fa_allow:{nick}")
                         kb.button(text="❌ Заблокировать", callback_data=f"2fa_deny:{nick}")
@@ -563,7 +569,7 @@ async def rcon_poll_2fa():
                             f"🚨 <b>Попытка входа на аккаунт LeafSMP!</b>\n\n"
                             f"👤 Игрок: <b>{nick}</b>\n"
                             f"🌐 IP-адрес: <code>{ip}</code>\n\n"
-                            f"Нажмите кнопку ниже, чтобы подтвердить вход:"
+                            f"Нажмите кнопку ниже, чтобы войти:"
                         )
                         try:
                             await bot.send_message(tg_id, text, parse_mode="HTML", reply_markup=kb.as_markup())
